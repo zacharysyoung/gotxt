@@ -10,13 +10,22 @@ import (
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/encoding/unicode/utf32"
 	"golang.org/x/text/transform"
 )
 
 var (
 	_utf8    = unicode.UTF8
 	_utf8BOM = unicode.UTF8BOM
-	_utf16BE = unicode.UTF16(unicode.BigEndian, unicode.UseBOM)
+
+	_utf16BE    = unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM)
+	_utf16BEBOM = unicode.UTF16(unicode.BigEndian, unicode.UseBOM)
+	_utf16LE    = unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+
+	_utf32BE    = utf32.UTF32(utf32.BigEndian, utf32.IgnoreBOM)
+	_utf32BEBOM = utf32.UTF32(utf32.BigEndian, utf32.UseBOM)
+	_utf32LE    = utf32.UTF32(utf32.LittleEndian, utf32.IgnoreBOM)
+
 	_8859_6E = charmap.ISO8859_6E
 	_8859_6I = charmap.ISO8859_6I
 	_8859_8E = charmap.ISO8859_8E
@@ -30,9 +39,16 @@ var (
 		_8859_8E: "ISO 8859-8E",
 		_8859_8I: "ISO 8859-8I",
 
-		_utf8:    "UTF8",
-		_utf8BOM: "UTF8BOM",
-		_utf16BE: "UTF16BE",
+		_utf8:    "UTF-8",
+		_utf8BOM: "UTF-8 BOM",
+
+		_utf16BE:    "UTF-16 BE",
+		_utf16BEBOM: "UTF-16 BE BOM",
+		_utf16LE:    "UTF-16 LE",
+
+		_utf32BE:    "UTF-32 BE",
+		_utf32BEBOM: "UTF-32 BE BOM",
+		_utf32LE:    "UTF-32 LE",
 	}
 )
 
@@ -75,6 +91,11 @@ var allEncodings = []encoding.Encoding{
 	_utf8,
 	_utf8BOM,
 	_utf16BE,
+	_utf16BEBOM,
+	_utf16LE,
+	_utf32BE,
+	_utf32BEBOM,
+	_utf32LE,
 	charmap.Windows874,
 	charmap.Windows1250,
 	charmap.Windows1251,
@@ -130,10 +151,10 @@ func main() {
 
 	var inEnc, outEnc encoding.Encoding
 
-	if inEnc = normNameEncoding[flagInName]; inEnc == nil {
+	if inEnc = normNameEncoding[normName(flagInName)]; inEnc == nil {
 		errorOut("invalid input encoding name: " + flagInName)
 	}
-	if outEnc = normNameEncoding[flagOutName]; outEnc == nil {
+	if outEnc = normNameEncoding[normName(flagOutName)]; outEnc == nil {
 		errorOut("invalid output encoding name: " + flagOutName)
 	}
 
