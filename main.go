@@ -179,11 +179,12 @@ func main() {
 	flag.Parse()
 
 	if flagList {
-		fmt.Println("# names are case insensitive; spaces and hyphens will not be used for comparison, i.e., UTF-8 = Utf 8 = utf8")
+		const comment = "# names are case insensitive; spaces and hyphens will not be used for comparison, i.e., `gotxt -in UTF-8` = `gotxt -in 'Utf 8'` = `gotxt -in utf8`"
+		fmt.Println(comment)
 		for _, name := range encodingNames {
 			fmt.Println(name)
 		}
-		fmt.Println("# names are case insensitive; spaces and hyphens will not be used for comparison, i.e., UTF-8 = Utf 8 = utf8")
+		fmt.Println(comment)
 		return
 	}
 

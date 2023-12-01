@@ -1,8 +1,8 @@
 # GoTXT: like iconv, but way less
 
-Provide common transcodings with Go's x/text package.
+Provide common transcodings with Go's [x/text package](https://pkg.go.dev/golang.org/x/text).
 
--in and -out control in the input and output encodings (both default to UTF-8):
+**-in** and **-out** control in the input and output encodings (both default to UTF-8):
 
 ```none
 % echo 'Hello, 世界' | gotxt -out utf8 | hexdump -C
@@ -37,10 +37,10 @@ Provide common transcodings with Go's x/text package.
 00000011
 ```
 
--list shows valid names:
+**-list** shows valid names; like the comment says, spaces and hyphens will be stripped out and the name made lowercase before:
 
 ```none
-# names are case insensitive; spaces and hyphens will not be used for comparison, i.e., UTF-8 = Utf 8 = utf8
+# names are case insensitive; spaces and hyphens will not be used for comparison, i.e., `gotxt -in UTF-8` = `gotxt -in 'Utf 8'` = `gotxt -in utf8`
 Big5
 IBM Code Page 037
 IBM Code Page 437
@@ -103,5 +103,5 @@ Windows 1256
 Windows 1257
 Windows 1258
 X-User-Defined
-# names are case insensitive; spaces and hyphens will not be used for comparison, i.e., UTF-8 = Utf 8 = utf8
+# names are case insensitive; spaces and hyphens will not be used for comparison, i.e., `gotxt -in UTF-8` = `gotxt -in 'Utf 8'` = `gotxt -in utf8`
 ```
