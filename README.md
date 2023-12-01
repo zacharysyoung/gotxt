@@ -37,7 +37,7 @@ Provide common transcodings with Go's [x/text package](https://pkg.go.dev/golang
 00000011
 ```
 
-**-list** shows valid names; like the comment says, spaces and hyphens will be stripped out and the name made lowercase before:
+**-list** shows valid names; like the comment says, spaces and hyphens will be stripped out and the name made lowercase before the command tries to match name:
 
 ```none
 # names are case insensitive; spaces and hyphens will not be used for comparison, i.e., `gotxt -in UTF-8` = `gotxt -in 'Utf 8'` = `gotxt -in utf8`
