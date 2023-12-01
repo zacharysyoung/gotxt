@@ -47,6 +47,8 @@ var (
 	_utf32BEBOM = utf32.UTF32(utf32.BigEndian, utf32.UseBOM)
 	_utf32LE    = utf32.UTF32(utf32.LittleEndian, utf32.IgnoreBOM)
 
+	// specialNames renames some encodings, also provides names for
+	// non-Charmap types
 	specialNames = map[encoding.Encoding]string{
 		charmap.CodePage858: "IBM Code Page 858",
 
@@ -80,6 +82,8 @@ var (
 	}
 )
 
+// allEncodings represents all available encodings, and controls the order
+// for print-out.
 var allEncodings = []encoding.Encoding{
 	_big5,
 	charmap.CodePage037,
@@ -149,7 +153,7 @@ var (
 	flagInName, flagOutName string
 	flagList                bool
 
-	encodingNames    []string
+	namesList        []string
 	normNameEncoding = make(map[string]encoding.Encoding)
 )
 
@@ -170,7 +174,7 @@ func init() {
 		if !ok {
 			name = enc.(*charmap.Charmap).String()
 		}
-		encodingNames = append(encodingNames, name)
+		namesList = append(namesList, name)
 		normNameEncoding[normName(name)] = enc
 	}
 }
@@ -181,7 +185,7 @@ func main() {
 	if flagList {
 		const comment = "# names are case insensitive; spaces and hyphens will not be used for comparison, i.e., `gotxt -in UTF-8` = `gotxt -in 'Utf 8'` = `gotxt -in utf8`"
 		fmt.Println(comment)
-		for _, name := range encodingNames {
+		for _, name := range namesList {
 			fmt.Println(name)
 		}
 		fmt.Println(comment)
@@ -197,20 +201,20 @@ func main() {
 		errorOut("invalid output encoding name: " + flagOutName)
 	}
 
-	var f *os.File
-	var err error
+	var input io.Reader
 	if len(flag.Args()) < 1 {
-		f = os.Stdin
+		input = os.Stdin
 	} else {
 		fname := flag.Args()[0]
-		f, err = os.Open(fname)
+		f, err := os.Open(fname)
 		if err != nil {
 			errorOut(fmt.Sprintf("could not open file %s: %v", fname, err))
 		}
+		defer f.Close()
+		input = f
 	}
-	defer f.Close()
 
-	r := transform.NewReader(f, inEnc.NewDecoder())
+	r := transform.NewReader(input, inEnc.NewDecoder())
 	w := transform.NewWriter(os.Stdout, outEnc.NewEncoder())
 
 	n, err := io.Copy(w, r)
