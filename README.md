@@ -32,7 +32,7 @@ Input can read from a named file, or from Stdin if the file is not provided.
 0000000c
 ```
 
-Transforming between incompatible encodings, e.g. UTF-8→Latin-1, will generate an error and point to the beginning of the first incompatible byte (index-1). Any portion of the input that was properly transcoded will be written to Stdout before the error message prints:
+Trying to transform incompatible runes/chars between encodings, e.g. the kanji 界 (U+754C) to ISO-8859-1, will generate an error and point to the beginning of the first incompatible byte (index-1). Any portion of the input that was properly transcoded will be written to Stdout before the error message prints:
 
 ```none
 % echo 'Hello, 世界' | gotxt -out iso8859-1
