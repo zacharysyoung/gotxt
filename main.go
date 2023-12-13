@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	"golang.org/x/text/encoding"
@@ -151,7 +153,7 @@ var allEncodings = []encoding.Encoding{
 
 var (
 	flagInName, flagOutName string
-	flagList                bool
+	flagList, flagVersion   bool
 
 	namesList        []string
 	normNameEncoding = make(map[string]encoding.Encoding)
@@ -168,6 +170,7 @@ func init() {
 	flag.StringVar(&flagInName, "in", "UTF-8", "input encoding name")
 	flag.StringVar(&flagOutName, "out", "UTF-8", "output encoding name")
 	flag.BoolVar(&flagList, "list", false, "list available encoding names")
+	flag.BoolVar(&flagVersion, "v", false, "print version/build info")
 
 	for _, enc := range allEncodings {
 		name, ok := specialNames[enc]
@@ -182,14 +185,11 @@ func init() {
 func main() {
 	flag.Parse()
 
-	if flagList {
-		const comment = "# names are case insensitive; spaces and hyphens will not be used for comparison, i.e., `gotxt -in UTF-8` = `gotxt -in 'Utf 8'` = `gotxt -in utf8`"
-		fmt.Println(comment)
-		for _, name := range namesList {
-			fmt.Println(name)
-		}
-		fmt.Println(comment)
-		return
+	switch {
+	case flagVersion:
+		exitWithVersion()
+	case flagList:
+		exitWithList()
 	}
 
 	var inEnc, outEnc encoding.Encoding
@@ -214,14 +214,50 @@ func main() {
 		input = f
 	}
 
+	output := bufio.NewWriter(os.Stdout)
+
 	r := transform.NewReader(input, inEnc.NewDecoder())
-	w := transform.NewWriter(os.Stdout, outEnc.NewEncoder())
+	w := transform.NewWriter(output, outEnc.NewEncoder())
+	defer w.Close()
 
 	n, err := io.Copy(w, r)
+	output.Flush()
+
 	if err != nil {
-		fmt.Print("\r") // Clear terminal of any printed text
+		if n > 0 {
+			fmt.Println("") // ensure error prints on new line
+		}
 		errorOut(fmt.Sprintf("could not transcode, read input up to byte %d: %v", n+1, err))
 	}
+}
+
+func exitWithList() {
+	comment := "# names are case insensitive; spaces and hyphens will not be used for comparison, i.e., `gotxt -in UTF-8` = `gotxt -in 'Utf 8'` = `gotxt -in utf8`"
+
+	fmt.Fprintln(os.Stderr, comment)
+	for _, name := range namesList {
+		fmt.Fprintln(os.Stderr, name)
+	}
+	fmt.Fprintln(os.Stderr, comment)
+
+	os.Exit(1)
+}
+
+func exitWithVersion() {
+	s := "gotxt"
+
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		for _, x := range bi.Settings {
+			if x.Key == "vcs.revision" {
+				s += ":" + x.Value[:7]
+			}
+		}
+		s += ":" + bi.GoVersion
+	}
+
+	fmt.Fprintln(os.Stderr, s)
+
+	os.Exit(1)
 }
 
 func errorOut(s string) {

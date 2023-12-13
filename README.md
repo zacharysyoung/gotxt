@@ -2,10 +2,12 @@
 
 Provide common transcodings with Go's [x/text package](https://pkg.go.dev/golang.org/x/text).
 
+Input can read from a named file, or from Stdin if the file is not provided.
+
 **-in** and **-out** control in the input and output encodings (both default to UTF-8):
 
 ```none
-% echo 'Hello, 世界' | gotxt -out utf8 | hexdump -C
+% echo 'Hello, 世界' | hexdump -C
 00000000  48 65 6c 6c 6f 2c 20 e4  b8 96 e7 95 8c 0a        |Hello, .......|
 0000000e
 ```
@@ -30,11 +32,12 @@ Provide common transcodings with Go's [x/text package](https://pkg.go.dev/golang
 0000000c
 ```
 
+Transforming between incompatible encodings, e.g. UTF-8→Latin-1, will generate an error and point to the beginning of the first incompatible byte (index-1). Any portion of the input that was properly transcoded will be written to Stdout before the error message prints:
+
 ```none
-% echo 'Hello, 世界' | gotxt -out shiftjis | gotxt -in shiftjis -out utf8bom | hexdump -C
-00000000  ef bb bf 48 65 6c 6c 6f  2c 20 e4 b8 96 e7 95 8c  |...Hello, ......|
-00000010  0a                                                |.|
-00000011
+% echo 'Hello, 世界' | gotxt -out iso8859-1
+Hello, 
+error: could not transcode, read input up to byte 8: encoding: rune not supported by encoding.
 ```
 
 **-list** shows valid names; like the comment says, spaces and hyphens will be stripped out and the name made lowercase before the command tries to match the name:
