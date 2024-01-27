@@ -44,10 +44,12 @@ var (
 	_utf16BE    = unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM)
 	_utf16BEBOM = unicode.UTF16(unicode.BigEndian, unicode.UseBOM)
 	_utf16LE    = unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+	_utf16LEBOM = unicode.UTF16(unicode.LittleEndian, unicode.UseBOM)
 
 	_utf32BE    = utf32.UTF32(utf32.BigEndian, utf32.IgnoreBOM)
 	_utf32BEBOM = utf32.UTF32(utf32.BigEndian, utf32.UseBOM)
 	_utf32LE    = utf32.UTF32(utf32.LittleEndian, utf32.IgnoreBOM)
+	_utf32LEBOM = utf32.UTF32(utf32.LittleEndian, utf32.UseBOM)
 
 	// specialNames renames some encodings, also provides names for
 	// non-Charmap types
@@ -77,10 +79,12 @@ var (
 		_utf16BE:    "UTF-16 BE",
 		_utf16BEBOM: "UTF-16 BE BOM",
 		_utf16LE:    "UTF-16 LE",
+		_utf16LEBOM: "UTF-16 LE BOM",
 
 		_utf32BE:    "UTF-32 BE",
 		_utf32BEBOM: "UTF-32 BE BOM",
 		_utf32LE:    "UTF-32 LE",
+		_utf32LEBOM: "UTF-32 LE BOM",
 	}
 )
 
@@ -135,9 +139,11 @@ var allEncodings = []encoding.Encoding{
 	_utf16BE,
 	_utf16BEBOM,
 	_utf16LE,
+	_utf16LEBOM,
 	_utf32BE,
 	_utf32BEBOM,
 	_utf32LE,
+	_utf32LEBOM,
 	charmap.Windows874,
 	charmap.Windows1250,
 	charmap.Windows1251,
