@@ -4,7 +4,7 @@ Provide common transcodings with Go's [x/text package](https://pkg.go.dev/golang
 
 Input can read from a named file, or from Stdin if the file is not provided.
 
-**-in** and **-out** control in the input and output encodings (both default to UTF-8):
+**-in** (**-i**) and **-out** (**-o**) control in the input and output encodings (both default to UTF-8):
 
 ```none
 % echo 'Hello, 世界' | hexdump -C
@@ -92,9 +92,11 @@ UTF-8 BOM
 UTF-16 BE
 UTF-16 BE BOM
 UTF-16 LE
+UTF-16 LE BOM
 UTF-32 BE
 UTF-32 BE BOM
 UTF-32 LE
+UTF-32 LE BOM
 Windows 874
 Windows 1250
 Windows 1251
