@@ -161,7 +161,7 @@ var (
 	flagInName, flagOutName string
 	flagList, flagVersion   bool
 
-	namesList        []string
+	namesList        []string // final list of names for print-out
 	normNameEncoding = make(map[string]encoding.Encoding)
 )
 
@@ -174,9 +174,11 @@ func normName(s string) string {
 
 func init() {
 	flag.StringVar(&flagInName, "in", "UTF-8", "input encoding name")
+	flag.StringVar(&flagInName, "i", "UTF-8", "shorthand for -in")
 	flag.StringVar(&flagOutName, "out", "UTF-8", "output encoding name")
+	flag.StringVar(&flagOutName, "o", "UTF-8", "shorthand for -out")
 	flag.BoolVar(&flagList, "list", false, "list available encoding names")
-	flag.BoolVar(&flagVersion, "v", false, "print version/build info")
+	flag.BoolVar(&flagVersion, "version", false, "print version/build info")
 
 	for _, enc := range allEncodings {
 		name, ok := specialNames[enc]
@@ -255,7 +257,8 @@ func exitWithVersion() {
 	if bi, ok := debug.ReadBuildInfo(); ok {
 		for _, x := range bi.Settings {
 			if x.Key == "vcs.revision" {
-				s += ":" + x.Value[:7]
+				s += ":" + x.Value[:7] // short hash
+				break
 			}
 		}
 		s += ":" + bi.GoVersion
