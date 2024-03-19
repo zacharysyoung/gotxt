@@ -103,8 +103,18 @@ var allEncodings = []encoding.Encoding{
 	charmap.CodePage863,
 	charmap.CodePage865,
 	charmap.CodePage866,
+	charmap.Windows874,
 	charmap.CodePage1047,
 	charmap.CodePage1140,
+	charmap.Windows1250,
+	charmap.Windows1251,
+	charmap.Windows1252,
+	charmap.Windows1253,
+	charmap.Windows1254,
+	charmap.Windows1255,
+	charmap.Windows1256,
+	charmap.Windows1257,
+	charmap.Windows1258,
 	_eucjp,
 	_euckr,
 	_gb18030,
@@ -144,16 +154,6 @@ var allEncodings = []encoding.Encoding{
 	_utf32BEBOM,
 	_utf32LE,
 	_utf32LEBOM,
-	charmap.Windows874,
-	charmap.Windows1250,
-	charmap.Windows1251,
-	charmap.Windows1252,
-	charmap.Windows1253,
-	charmap.Windows1254,
-	charmap.Windows1255,
-	charmap.Windows1256,
-	charmap.Windows1257,
-	charmap.Windows1258,
 }
 
 var (
@@ -167,13 +167,11 @@ var (
 	normNameEncoding = make(map[string]encoding.Encoding)
 )
 
-// var reNonNorm = regexp.MustCompile(`[^\-A-Za-z0-9]`)
-
 func normName(s string) string {
-	// s = reNonNorm.ReplaceAllString(s, "")
-	s = strings.ReplaceAll(s, " ", "-")
-	// s = strings.ReplaceAll(s, "-", "")
 	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, " ", "-")
+	s = strings.ReplaceAll(s, "windows", "cp")
+	s = strings.ReplaceAll(s, "ibm-code-page", "cp")
 	return s
 }
 
