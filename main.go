@@ -63,7 +63,7 @@ var (
 
 		_eucjp:     "EUCJP",
 		_iso2022jp: "ISO 2022-JP",
-		_shiftjis:  "SHIFT JIS",
+		_shiftjis:  "SHIFT-JIS",
 
 		_euckr: "EUCKR",
 
@@ -74,17 +74,17 @@ var (
 		_big5: "Big5",
 
 		_utf8:    "UTF-8",
-		_utf8BOM: "UTF-8 BOM",
+		_utf8BOM: "UTF-8-BOM",
 
-		_utf16BE:    "UTF-16 BE",
-		_utf16BEBOM: "UTF-16 BE BOM",
-		_utf16LE:    "UTF-16 LE",
-		_utf16LEBOM: "UTF-16 LE BOM",
+		_utf16BE:    "UTF-16-BE",
+		_utf16BEBOM: "UTF-16-BE-BOM",
+		_utf16LE:    "UTF-16-LE",
+		_utf16LEBOM: "UTF-16-LE-BOM",
 
-		_utf32BE:    "UTF-32 BE",
-		_utf32BEBOM: "UTF-32 BE BOM",
-		_utf32LE:    "UTF-32 LE",
-		_utf32LEBOM: "UTF-32 LE BOM",
+		_utf32BE:    "UTF-32-BE",
+		_utf32BEBOM: "UTF-32-BE-BOM",
+		_utf32LE:    "UTF-32-LE",
+		_utf32LEBOM: "UTF-32-LE-BOM",
 	}
 )
 
@@ -154,30 +154,34 @@ var allEncodings = []encoding.Encoding{
 	charmap.Windows1256,
 	charmap.Windows1257,
 	charmap.Windows1258,
-	charmap.XUserDefined,
 }
 
 var (
 	flagInName, flagOutName string
-	flagList, flagVersion   bool
+
+	flagList, flagListU bool
+
+	flagVersion bool
 
 	namesList        []string // final list of names for print-out
 	normNameEncoding = make(map[string]encoding.Encoding)
 )
 
+// var reNonNorm = regexp.MustCompile(`[^\-A-Za-z0-9]`)
+
 func normName(s string) string {
-	s = strings.ReplaceAll(s, " ", "")
-	s = strings.ReplaceAll(s, "-", "")
+	// s = reNonNorm.ReplaceAllString(s, "")
+	s = strings.ReplaceAll(s, " ", "-")
+	// s = strings.ReplaceAll(s, "-", "")
 	s = strings.ToLower(s)
 	return s
 }
 
 func init() {
-	flag.StringVar(&flagInName, "in", "UTF-8", "input encoding name")
-	flag.StringVar(&flagInName, "i", "UTF-8", "shorthand for -in")
-	flag.StringVar(&flagOutName, "out", "UTF-8", "output encoding name")
-	flag.StringVar(&flagOutName, "o", "UTF-8", "shorthand for -out")
-	flag.BoolVar(&flagList, "list", false, "list available encoding names")
+	flag.StringVar(&flagInName, "in", "utf-8", "input encoding name")
+	flag.StringVar(&flagOutName, "out", "utf-8", "output encoding name")
+	flag.BoolVar(&flagList, "list", false, "list all available encoding names")
+	flag.BoolVar(&flagListU, "list-u", false, "list available UTF encoding names")
 	flag.BoolVar(&flagVersion, "version", false, "print version/build info")
 
 	for _, enc := range allEncodings {
@@ -185,8 +189,9 @@ func init() {
 		if !ok {
 			name = enc.(*charmap.Charmap).String()
 		}
+		name = normName(name)
 		namesList = append(namesList, name)
-		normNameEncoding[normName(name)] = enc
+		normNameEncoding[name] = enc
 	}
 }
 
@@ -196,16 +201,18 @@ func main() {
 	switch {
 	case flagVersion:
 		exitWithVersion()
+	case flagListU:
+		exitWithList("utf")
 	case flagList:
-		exitWithList()
+		exitWithList("all")
 	}
 
 	var inEnc, outEnc encoding.Encoding
 
-	if inEnc = normNameEncoding[normName(flagInName)]; inEnc == nil {
+	if inEnc = normNameEncoding[flagInName]; inEnc == nil {
 		errorOut("invalid input encoding name: " + flagInName)
 	}
-	if outEnc = normNameEncoding[normName(flagOutName)]; outEnc == nil {
+	if outEnc = normNameEncoding[flagOutName]; outEnc == nil {
 		errorOut("invalid output encoding name: " + flagOutName)
 	}
 
@@ -239,21 +246,23 @@ func main() {
 	}
 }
 
-func exitWithList() {
-	comment := "# names are case insensitive; spaces and hyphens will not be used for comparison, i.e., `gotxt -in UTF-8` = `gotxt -in 'Utf 8'` = `gotxt -in utf8`"
-
-	fmt.Fprintln(os.Stderr, comment)
-	for _, name := range namesList {
-		fmt.Fprintln(os.Stderr, name)
+func exitWithList(category string) {
+	lines := []string{}
+	switch category {
+	case "all":
+		lines = namesList
+	case "utf":
+		for _, name := range namesList {
+			if name[:3] == "utf" {
+				lines = append(lines, name)
+			}
+		}
 	}
-	fmt.Fprintln(os.Stderr, comment)
-
-	os.Exit(1)
+	exitWithLines(lines)
 }
 
 func exitWithVersion() {
 	s := "gotxt"
-
 	if bi, ok := debug.ReadBuildInfo(); ok {
 		for _, x := range bi.Settings {
 			if x.Key == "vcs.revision" {
@@ -263,13 +272,17 @@ func exitWithVersion() {
 		}
 		s += ":" + bi.GoVersion
 	}
+	exitWithLines([]string{s})
+}
 
-	fmt.Fprintln(os.Stderr, s)
-
-	os.Exit(1)
+func exitWithLines(lines []string) {
+	for _, line := range lines {
+		fmt.Fprintln(os.Stdout, line)
+	}
+	os.Exit(0)
 }
 
 func errorOut(s string) {
 	fmt.Fprintln(os.Stderr, "error: "+s)
-	os.Exit(1)
+	os.Exit(2)
 }
