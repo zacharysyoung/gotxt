@@ -7,13 +7,13 @@
 //
 // Usage:
 //
-// gotxt [-in] [-out] [-list|list-u] [-version] [file]
+// gotxt [-in] [-out] [-list|list-utf] [-version] [file]
 //
 // GoTXT reads the named text file, or else standard input,
 // with the input encoding and then reprints the same text
 // with the output encoding.
 //
-// The -list and -list-u flags print the encodings and the
+// The -list and -list-utf flags print the encodings and the
 // specific names to pass to -in and -out.
 package main
 
@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
+	"slices"
 	"strings"
 
 	"golang.org/x/text/encoding"
@@ -106,7 +107,7 @@ var (
 )
 
 // allEncodings represents all available encodings, and controls the order
-// for print-out.
+// during listing.
 var allEncodings = []encoding.Encoding{
 	_big5,
 	charmap.CodePage037,
@@ -174,14 +175,14 @@ var allEncodings = []encoding.Encoding{
 }
 
 var (
-	flagInName, flagOutName string
+	inName  = flag.String("in", "utf-8", "input encoding name")
+	outName = flag.String("out", "utf-8", "output encoding name")
+	list    = flag.Bool("list", false, "list all encoding names")
+	listUTF = flag.Bool("list-utf", false, "list just UTF encoding names")
+	version = flag.Bool("version", false, "print version/build info")
 
-	flagList, flagListU bool
-
-	flagVersion bool
-
-	namesList        []string // final list of names for print-out
-	normNameEncoding = make(map[string]encoding.Encoding)
+	namesList []string // final list of names for print-out
+	normNames = make(map[string]encoding.Encoding)
 )
 
 func normName(s string) string {
@@ -193,12 +194,6 @@ func normName(s string) string {
 }
 
 func init() {
-	flag.StringVar(&flagInName, "in", "utf-8", "input encoding name")
-	flag.StringVar(&flagOutName, "out", "utf-8", "output encoding name")
-	flag.BoolVar(&flagList, "list", false, "list all encoding names")
-	flag.BoolVar(&flagListU, "list-u", false, "list UTF encoding names")
-	flag.BoolVar(&flagVersion, "version", false, "print version/build info")
-
 	for _, enc := range allEncodings {
 		name, ok := specialNames[enc]
 		if !ok {
@@ -206,12 +201,12 @@ func init() {
 		}
 		name = normName(name)
 		namesList = append(namesList, name)
-		normNameEncoding[name] = enc
+		normNames[name] = enc
 	}
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "usage: gotxt [-in] [-out] [-list|list-u] [-version] [file]\n")
+	fmt.Fprintf(os.Stderr, "usage: gotxt [-in] [-out] [-list|list-utf] [-version] [file]\n")
 	flag.PrintDefaults()
 	os.Exit(2)
 }
@@ -221,21 +216,21 @@ func main() {
 	flag.Parse()
 
 	switch {
-	case flagVersion:
+	case *version:
 		exitWithVersion()
-	case flagListU:
-		exitWithList("utf")
-	case flagList:
-		exitWithList("all")
+	case *listUTF:
+		printList("utf")
+	case *list:
+		printList("all")
 	}
 
 	var inEnc, outEnc encoding.Encoding
 
-	if inEnc = normNameEncoding[flagInName]; inEnc == nil {
-		errorOut("invalid input encoding name: " + flagInName)
+	if inEnc = normNames[*inName]; inEnc == nil {
+		error("invalid input encoding name: " + *inName)
 	}
-	if outEnc = normNameEncoding[flagOutName]; outEnc == nil {
-		errorOut("invalid output encoding name: " + flagOutName)
+	if outEnc = normNames[*outName]; outEnc == nil {
+		error("invalid output encoding name: " + *outName)
 	}
 
 	var input io.Reader
@@ -245,7 +240,7 @@ func main() {
 		fname := flag.Args()[0]
 		f, err := os.Open(fname)
 		if err != nil {
-			errorOut(fmt.Sprintf("could not open file %s: %v", fname, err))
+			error(fmt.Sprintf("could not open file %s: %v", fname, err))
 		}
 		defer f.Close()
 		input = f
@@ -264,23 +259,22 @@ func main() {
 		if n > 0 {
 			fmt.Println("") // ensure error prints on new line
 		}
-		errorOut(fmt.Sprintf("could not transcode, read input up to byte %d: %v", n+1, err))
+		error(fmt.Sprintf("could not transcode, read input up to byte %d: %v", n+1, err))
 	}
 }
 
-func exitWithList(category string) {
-	lines := []string{}
+func printList(category string) {
 	switch category {
+	default:
+		panic(fmt.Errorf("bad category %q", category))
 	case "all":
-		lines = namesList
+		exit(namesList)
 	case "utf":
-		for _, name := range namesList {
-			if name[:3] == "utf" {
-				lines = append(lines, name)
-			}
-		}
+		lines := slices.DeleteFunc(namesList, func(s string) bool {
+			return s[:3] != "utf"
+		})
+		exit(lines)
 	}
-	exitWithLines(lines)
 }
 
 func exitWithVersion() {
@@ -294,17 +288,17 @@ func exitWithVersion() {
 		}
 		s += ":" + bi.GoVersion
 	}
-	exitWithLines([]string{s})
+	exit([]string{s})
 }
 
-func exitWithLines(lines []string) {
+func exit(lines []string) {
 	for _, line := range lines {
 		fmt.Fprintln(os.Stdout, line)
 	}
-	os.Exit(0)
+	os.Exit(2)
 }
 
-func errorOut(s string) {
+func error(s string) {
 	fmt.Fprintln(os.Stderr, "error: "+s)
-	os.Exit(2)
+	os.Exit(1)
 }
