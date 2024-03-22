@@ -185,7 +185,7 @@ var (
 	normNames = make(map[string]encoding.Encoding)
 )
 
-func normName(s string) string {
+func norm(s string) string {
 	s = strings.ToLower(s)
 	s = strings.ReplaceAll(s, " ", "-")
 	s = strings.ReplaceAll(s, "windows", "cp")
@@ -199,7 +199,7 @@ func init() {
 		if !ok {
 			name = enc.(*charmap.Charmap).String()
 		}
-		name = normName(name)
+		name = norm(name)
 		namesList = append(namesList, name)
 		normNames[name] = enc
 	}
@@ -216,12 +216,12 @@ func main() {
 	flag.Parse()
 
 	switch {
-	case *version:
-		exitWithVersion()
-	case *listUTF:
-		printList("utf")
 	case *list:
 		printList("all")
+	case *listUTF:
+		printList("utf")
+	case *version:
+		printVersion()
 	}
 
 	var inEnc, outEnc encoding.Encoding
@@ -277,7 +277,7 @@ func printList(category string) {
 	}
 }
 
-func exitWithVersion() {
+func printVersion() {
 	s := "gotxt"
 	if bi, ok := debug.ReadBuildInfo(); ok {
 		for _, x := range bi.Settings {
