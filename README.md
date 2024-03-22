@@ -4,7 +4,7 @@ Provide common transcodings with Go's [x/text package](https://pkg.go.dev/golang
 
 Install with `go install github.com/zacharysyoung/gotxt@latest`.
 
-Input can read from a named file, or from Stdin if the file is not provided.
+Input can be read from a named file, or from Stdin if the file is not provided.
 
 **-in** and **-out** control in the input and output encodings (both default to UTF-8):
 

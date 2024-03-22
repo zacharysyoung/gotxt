@@ -1,3 +1,20 @@
+// Copyright 2024 Zachary S Young.  All rights reserved.
+// Use of this source code is governed by an MIT
+// license that can be found in the LICENSE file.
+
+// GoTXT transcodes text files between the encodings
+// provided by golang.org/x/text.
+//
+// Usage:
+//
+// gotxt [-in] [-out] [-list|list-u] [-version] [file]
+//
+// GoTXT reads the named text file, or else standard input,
+// with the input encoding and then reprints the same text
+// with the output encoding.
+//
+// The -list and -list-u flags print the encodings and the
+// specific names to pass to -in and -out.
 package main
 
 import (
@@ -178,8 +195,8 @@ func normName(s string) string {
 func init() {
 	flag.StringVar(&flagInName, "in", "utf-8", "input encoding name")
 	flag.StringVar(&flagOutName, "out", "utf-8", "output encoding name")
-	flag.BoolVar(&flagList, "list", false, "list all available encoding names")
-	flag.BoolVar(&flagListU, "list-u", false, "list available UTF encoding names")
+	flag.BoolVar(&flagList, "list", false, "list all encoding names")
+	flag.BoolVar(&flagListU, "list-u", false, "list UTF encoding names")
 	flag.BoolVar(&flagVersion, "version", false, "print version/build info")
 
 	for _, enc := range allEncodings {
@@ -193,7 +210,14 @@ func init() {
 	}
 }
 
+func usage() {
+	fmt.Fprintf(os.Stderr, "usage: gotxt [-in] [-out] [-list|list-u] [-version] [file]\n")
+	flag.PrintDefaults()
+	os.Exit(2)
+}
+
 func main() {
+	flag.Usage = usage
 	flag.Parse()
 
 	switch {
