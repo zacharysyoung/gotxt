@@ -2,8 +2,8 @@
 // Use of this source code is governed by an MIT
 // license that can be found in the LICENSE file.
 
-// GoTXT transcodes text files between the encodings
-// provided by golang.org/x/text.
+// GoTXT transcodes text files between a few, common
+// encodings.
 //
 // Usage:
 //
@@ -15,6 +15,9 @@
 //
 // The -list and -list-utf flags print the encodings and the
 // specific names to pass to -in and -out.
+//
+// Supported encodings and the transformer come from
+// golang.org/x/text.
 package main
 
 import (
