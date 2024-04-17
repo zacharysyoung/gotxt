@@ -6,9 +6,9 @@ Install with `go install github.com/zacharysyoung/gotxt@latest`.
 
 Input can be read from a named file, or from Stdin if the file is not provided.
 
-**-in** and **-out** control in the input and output encodings (both default to UTF-8):
+**-in** and **-out** set the input and output encodings by listed name; both default to UTF-8.
 
-**-list** shows all valid names, **-list-u** shows names for just the UTF variants.  All names given to -in and -out must match exactly as listed.
+**-list** prints all valid names, **-list-u** prints just the UTF variants.  All names given to -in and -out must match exactly as listed.
 
 ```none
 % echo 'Hello, 世界' | hexdump -C
