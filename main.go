@@ -7,7 +7,7 @@
 //
 // Usage:
 //
-// gotxt [-in] [-out] [-list|list-utf] [-version] [file]
+// gotxt [-in] [-out] [-list|-list-utf] [-version] [file]
 //
 // GoTXT reads the named text file, or else standard input,
 // with the input encoding and then reprints the same text
@@ -27,7 +27,6 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
-	"slices"
 	"strings"
 
 	"golang.org/x/text/encoding"
@@ -184,7 +183,7 @@ var (
 	listUTF = flag.Bool("list-utf", false, "list just UTF encoding names")
 	version = flag.Bool("version", false, "print version/build info")
 
-	namesList []string // final list of names for print-out
+	finalList []string // final list of names for print-out
 	normNames = make(map[string]encoding.Encoding)
 )
 
@@ -203,16 +202,18 @@ func init() {
 			name = enc.(*charmap.Charmap).String()
 		}
 		name = norm(name)
-		namesList = append(namesList, name)
+		finalList = append(finalList, name)
 		normNames[name] = enc
 	}
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "usage: gotxt [-in] [-out] [-list|list-utf] [-version] [file]\n")
+	fmt.Fprintf(os.Stderr, "usage: gotxt [-in] [-out] [-list|-list-utf] [-version] [file]\n")
 	flag.PrintDefaults()
 	os.Exit(2)
 }
+
+const utf = "utf"
 
 func main() {
 	flag.Usage = usage
@@ -220,64 +221,82 @@ func main() {
 
 	switch {
 	case *list:
-		printList("all")
+		printList("")
 	case *listUTF:
-		printList("utf")
+		printList(utf)
 	case *version:
 		printVersion()
 	}
 
-	var inEnc, outEnc encoding.Encoding
+	var encIn, encOut encoding.Encoding
 
-	if inEnc = normNames[*inName]; inEnc == nil {
-		error("invalid input encoding name: " + *inName)
+	if encIn = normNames[*inName]; encIn == nil {
+		badArgs("invalid input encoding name: " + *inName)
 	}
-	if outEnc = normNames[*outName]; outEnc == nil {
-		error("invalid output encoding name: " + *outName)
+	if encOut = normNames[*outName]; encOut == nil {
+		badArgs("invalid output encoding name: " + *outName)
 	}
 
-	var input io.Reader
-	if len(flag.Args()) < 1 {
-		input = os.Stdin
-	} else {
-		fname := flag.Args()[0]
-		f, err := os.Open(fname)
+	var (
+		r   io.Reader
+		w   = bufio.NewWriter(os.Stdout)
+		err error
+	)
+
+	tail := flag.Args()
+	switch len(tail) {
+	case 0:
+		r = os.Stdin
+	case 1:
+		r, err = os.Open(tail[0])
 		if err != nil {
-			error(fmt.Sprintf("could not open file %s: %v", fname, err))
+			errorOut(fmt.Sprintf("could not read from specified file: %v", err))
 		}
-		defer f.Close()
-		input = f
+		defer r.(*os.File).Close()
+	default:
+		badArgs(fmt.Sprintf("got %d files: %s; can only read from Stdin or a single file", len(tail), strings.Join(tail, ", ")))
 	}
 
-	output := bufio.NewWriter(os.Stdout)
+	tr := transform.NewReader(r, encIn.NewDecoder())
+	tw := transform.NewWriter(w, encOut.NewEncoder())
+	defer tw.Close()
 
-	r := transform.NewReader(input, inEnc.NewDecoder())
-	w := transform.NewWriter(output, outEnc.NewEncoder())
-	defer w.Close()
+	n, copyErr := io.Copy(tw, tr)
 
-	n, err := io.Copy(w, r)
-	output.Flush()
+	// Flush before dealing w/copyErr to print any partially transcoded text.
+	// Ignore flush errors so as not to preempt copyErr.
+	w.Flush()
 
-	if err != nil {
+	if copyErr != nil {
 		if n > 0 {
-			fmt.Println("") // ensure error prints on new line
+			fmt.Fprint(w, "\n") // ensure error prints on new line
+			w.Flush()
 		}
-		error(fmt.Sprintf("could not transcode, read input up to byte %d: %v", n+1, err))
+		errorOut(fmt.Sprintf("could not transcode, read input up to byte %d: %v", n+1, copyErr))
+	}
+
+	if err = tw.Close(); err != nil {
+		errorOut(fmt.Sprintf("could not close transform writer: %v", err))
+	}
+	if err = r.(*os.File).Close(); err != nil {
+		errorOut(fmt.Sprintf("could not close input file: %v", err))
 	}
 }
 
 func printList(category string) {
 	switch category {
+	case utf:
+		for _, x := range finalList {
+			if strings.HasPrefix(x, utf) {
+				fmt.Fprintln(os.Stderr, x)
+			}
+		}
 	default:
-		panic(fmt.Errorf("bad category %q", category))
-	case "all":
-		exit(namesList)
-	case "utf":
-		lines := slices.DeleteFunc(namesList, func(s string) bool {
-			return s[:3] != "utf"
-		})
-		exit(lines)
+		for _, x := range finalList {
+			fmt.Fprintln(os.Stderr, x)
+		}
 	}
+	os.Exit(2)
 }
 
 func printVersion() {
@@ -291,17 +310,16 @@ func printVersion() {
 		}
 		s += ":" + bi.GoVersion
 	}
-	exit([]string{s})
-}
-
-func exit(lines []string) {
-	for _, line := range lines {
-		fmt.Fprintln(os.Stdout, line)
-	}
+	fmt.Fprintln(os.Stderr, s)
 	os.Exit(2)
 }
 
-func error(s string) {
-	fmt.Fprintln(os.Stderr, "error: "+s)
+func badArgs(s string) {
+	fmt.Fprintf(os.Stderr, "error: %s\n", s)
+	os.Exit(2)
+}
+
+func errorOut(s string) {
+	fmt.Fprintf(os.Stderr, "error: %s\n", s)
 	os.Exit(1)
 }
